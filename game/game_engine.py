@@ -1,100 +1,120 @@
-import random
 import pygame
+import sys
+from game.player import Player
 from game.rope import Rope
-from game.player import Puller
-
 
 class GameEngine:
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.rope = Rope(width, height)
-        self.player = Puller(90, height // 2, (50, 120, 220), "PLAYER (A/D)")
-        self.computer = Puller(width - 90, height // 2, (220, 80, 50), "COMPUTER")
-
-        self.last_key = None
-        self.is_pull_locked = False
-        self.winner = None
-        self.game_state = "PLAYING"
-
-        self.computer_pull_cooldown = 180
-        self.last_computer_pull = pygame.time.get_ticks()
-
-        self.font_big = pygame.font.SysFont(None, 48)
-        self.font_small = pygame.font.SysFont(None, 26)
-
-    def handle_event(self, event):
-        if self.game_state != "PLAYING":
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                self.reset()
-            return
-
-        if event.type == pygame.KEYDOWN:
-            if event.key in (pygame.K_a, pygame.K_d):
-                if not self.is_pull_locked:
-                    if event.key != self.last_key:
-                        self.rope.pull_left(1.0)
-                        self.last_key = event.key
-                        self.is_pull_locked = True
-        elif event.type == pygame.KEYUP:
-            if event.key == self.last_key:
-                self.is_pull_locked = False
+    def __init__(self):
+        pygame.init()
+        self.width, self.height = 900, 500
+        self.screen = pygame.display.set_mode((self.width, self.height))
+        pygame.display.set_caption("Tug of War - Vibe Coded Edition")
         
-    def update(self):
-        if self.game_state != "PLAYING":
-            return
+        self.clock = pygame.time.Clock()
+        self.fps = 60
+        self.game_duration = 30  # Timer duration in seconds
+        
+        # Color Palette
+        self.WHITE = (255, 255, 255)
+        self.BLACK = (20, 20, 20)
+        self.RED = (220, 53, 69)
+        self.BLUE = (13, 110, 253)
+        self.GREEN = (40, 167, 69)
+        self.GRAY = (200, 200, 200)
 
-        now = pygame.time.get_ticks()
-        if now - self.last_computer_pull >= self.computer_pull_cooldown:
-            computer_variance = random.uniform(0.7, 1.2)
-            self.rope.pull_right(computer_variance)
-            self.last_computer_pull = now
+        # Game Entities
+        self.p1 = Player("Player 1", pygame.K_a, self.RED, "left")
+        self.p2 = Player("Player 2", pygame.K_l, self.BLUE, "right")
+        self.rope = Rope(self.width)
+        
+        self.start_ticks = pygame.time.get_ticks()
+        self.winner = None
 
-        result = self.rope.check_winner()
-        if result:
-            self.winner = result
-            self.game_state = "GAME_OVER"
+        # Fonts
+        self.font = pygame.font.SysFont("Arial", 26, bold=True)
+        self.large_font = pygame.font.SysFont("Arial", 42, bold=True)
 
     def reset(self):
+        """Reset match variables for game replay."""
         self.rope.reset()
-        self.last_key = None
-        self.is_pull_locked = False
+        self.start_ticks = pygame.time.get_ticks()
         self.winner = None
-        self.game_state = "PLAYING"
-        self.last_computer_pull = pygame.time.get_ticks()
 
-    def render(self, screen):
-        screen.fill((30, 32, 36))
+    def run(self):
+        """Main event loop."""
+        running = True
+        while running:
+            self.clock.tick(self.fps)
 
-        mud_rect = pygame.Rect(self.width // 2 - 120, self.height // 2 - 80, 240, 160)
-        pygame.draw.rect(screen, (45, 38, 30), mud_rect, border_radius=12)
+            # Countdown Timer Evaluation
+            if self.winner is None:
+                seconds_passed = (pygame.time.get_ticks() - self.start_ticks) // 1000
+                time_left = max(0, self.game_duration - seconds_passed)
 
-        self.rope.render(screen)
-        self.player.render(screen)
-        self.computer.render(screen)
+                # Time ran out: evaluate who is closest to their side
+                if time_left == 0:
+                    if self.rope.position < self.width // 2:
+                        self.winner = "Player 1 (Left)"
+                    elif self.rope.position > self.width // 2:
+                        self.winner = "Player 2 (Right)"
+                    else:
+                        self.winner = "Tie Game!"
+            else:
+                time_left = 0
 
-        inst_surf = self.font_small.render(
-            "Alternate [A] and [D] keys rapidly to pull!", True, (210, 210, 210)
-        )
-        screen.blit(inst_surf, (self.width // 2 - inst_surf.get_width() // 2, 40))
+            # Input Event Handling
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
 
-        if self.game_state == "GAME_OVER":
-            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 180))
-            screen.blit(overlay, (0, 0))
+                if event.type == pygame.KEYDOWN:
+                    if self.winner is None:
+                        if self.p1.is_pulling(event):
+                            self.rope.pull_left()
+                        elif self.p2.is_pulling(event):
+                            self.rope.pull_right()
 
-            win_text = f"{self.winner} WINS!"
-            color = (80, 220, 80) if self.winner == "PLAYER" else (240, 80, 80)
-            text_surf = self.font_big.render(win_text, True, color)
-            screen.blit(
-                text_surf,
-                (self.width // 2 - text_surf.get_width() // 2, self.height // 2 - 50)
-            )
+                        self.winner = self.rope.check_winner()
 
-            restart_surf = self.font_small.render(
-                "Press [R] to Play Again", True, (240, 240, 240)
-            )
-            screen.blit(
-                restart_surf,
-                (self.width // 2 - restart_surf.get_width() // 2, self.height // 2 + 10)
-            )
+                    # Press 'R' to restart game
+                    if event.key == pygame.K_r:
+                        self.reset()
+
+            self.rope.clamp()
+            self.draw(time_left)
+
+        pygame.quit()
+        sys.exit()
+
+    def draw(self, time_left: int):
+        """Render all frame elements."""
+        self.screen.fill(self.WHITE)
+
+        # Center Line & Winning Threshold Boundaries
+        pygame.draw.line(self.screen, self.GRAY, (self.width // 2, 80), (self.width // 2, 380), 3)
+        pygame.draw.line(self.screen, self.RED, (self.width // 2 - self.rope.win_threshold, 160), 
+                         (self.width // 2 - self.rope.win_threshold, 340), 4)
+        pygame.draw.line(self.screen, self.BLUE, (self.width // 2 + self.rope.win_threshold, 160), 
+                         (self.width // 2 + self.rope.win_threshold, 340), 4)
+
+        # Rope Line & Center Knot Circle
+        pygame.draw.line(self.screen, self.BLACK, (80, 250), (self.width - 80, 250), 8)
+        pygame.draw.circle(self.screen, self.GREEN, (self.rope.position, 250), 16)
+
+        # HUD Display Elements
+        p1_txt = self.font.render("Player 1: Press 'A'", True, self.RED)
+        p2_txt = self.font.render("Player 2: Press 'L'", True, self.BLUE)
+        timer_txt = self.font.render(f"Time Remaining: {time_left}s", True, self.BLACK)
+
+        self.screen.blit(p1_txt, (40, 30))
+        self.screen.blit(p2_txt, (self.width - 240, 30))
+        self.screen.blit(timer_txt, (self.width // 2 - 110, 30))
+
+        # Game Over / Winner Banner
+        if self.winner:
+            res_txt = self.large_font.render(f"{self.winner} Wins!", True, self.GREEN if "Tie" not in self.winner else self.BLACK)
+            rst_txt = self.font.render("Press 'R' to Restart", True, self.BLACK)
+            self.screen.blit(res_txt, (self.width // 2 - res_txt.get_width() // 2, 370))
+            self.screen.blit(rst_txt, (self.width // 2 - rst_txt.get_width() // 2, 430))
+
+        pygame.display.flip()
