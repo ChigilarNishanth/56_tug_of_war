@@ -1,91 +1,77 @@
-# Tug of War Repair Lab
+# Tug of War - Pygame Edition (Lab 4: Vibe Coding)
 
-This project is a competitive tug-of-war game using **Pygame**. It introduces students to alternating keyboard input synchronization, debounce and lock state patterns, physics-based tension balancing, and autonomous AI pulling mechanics within an object-oriented codebase.
----
-
-## What's Provided
-
-A working Tug of War game with:
-
-- A horizontal rope setup with goal markers, center boundary indicators, and a center position flag
-- Two anchor pullers (`PLAYER` and `COMPUTER`) rendered with visual team colorings
-- An alternating key input model requiring players to alternate `A` and `D` to pull left
-- An autonomous computer opponent that pulls the rope rightward at recurring intervals
-- Win-state boundary detection and a Game Over overlay with rematch support
-
-It has **one deliberate bug** and **three optional features** left as tasks to implement. You are expected to **analyze**, **interact with an AI assistant**, and **complete/fix** the game to make it fully functional and more interesting.
-
-### **Use an LLM (e.g. ChatGPT or Claude) as your debugging and pair-programming partner for this lab.**
----
-
-## Getting Started
-
-### Setup
-
-1. Make sure you have Python 3.10+ installed.
-2. Install dependencies:
-
-```bash
-pip install pygame
-```
-
-3. Run the game:
-
-```bash
-python main.py
-```
-
-**Controls:** Left-click on the HIGHER or LOWER buttons to predict the next card.   
-
-
-## Tasks to Complete
-
-Each task must be completed using an iterative process involving LLM suggestions and your critical code review.
-
-### Task 1: Fix the Alternating Input Deadlock Bug
-
-Rapidly mashing back and forth between A and D suddenly freezes input handling completely, leaving the rope unresponsive while the computer effortlessly pulls away with the win. Redesign the input synchronization so that overlapping or rapid alternating keystrokes consistently register pulls without locking the player out.
-
-### Task 2: Implement Dynamic AI Panic Surges
-
-The computer currently pulls at a fixed cadence with minimal variation. Introduce dynamic difficulty: as the center marker gets pulled closer to the player's winning threshold, have the computer enter a high-intensity panic surge with faster reaction intervals and aggressive pulling strength to stage a comeback.
-
-### Task 3: Implement Rope Tension & Puller Leaning Animations
-
-The rope and pullers are currently visually static. Add dynamic visual feedback: give the rope a vibrating high-tension hum or sag depending on struggle intensity, and animate both characters with backward leaning postures based on which side holds pulling momentum.
-
-### Task 4: Implement a match timer and sudden death mode
-
-Matches between evenly matched opponents can drag on indefinitely. Add a live match timer at the top of the screen. If no side has won within 45 seconds, trigger a "Sudden Death" state that doubles pulling power across all actions to force a swift finish.
+A 2-player local multiplayer Tug of War game built with Python and Pygame. This repository was debugged, modularized, and enhanced using **Vibe Coding** techniques as part of **Lab 4: Vibe Coding**.
 
 ---
 
-## Expected Behavior
+## 📌 Project Overview
 
-- Rapidly alternating between A and D reliably moves the red center flag to the left without freezing or dropping inputs during fast mashing.
-- The computer pulls the marker to the right at recurring intervals.
-- The match ends when the flag crosses the left boundary (Player wins) or right boundary (Computer wins).
-- Pressing R on the Game Over screen resets the rope marker, keys, timers, and game states.
+The application simulates a two-player Tug of War match. Players compete in real-time by rapidly pressing assigned keys to pull the center knot across visual winning threshold markers before the countdown timer expires.
+
+### Key Features & Bug Fixes
+- **Event Handling & Physics Fix**: Corrected player key event listeners and rope positioning logic.
+- **Boundary Clamping**: Clamped the central knot marker position to remain within visible screen dimensions.
+- **Countdown Timer (30s)**: Implemented a 30-second match timer displayed in the main HUD header.
+- **Tie-Breaker Logic**: Evaluates knot positioning when time expires to declare the player closest to their boundary as the winner.
+- **Visual Thresholds & HUD**: Added clear win boundary lines (Red for Player 1, Blue for Player 2) and real-time status text.
+- **Instant Match Reset**: Added key event listener (`R`) to reset the timer, rope position, and match outcome without exiting the game.
+
 ---
 
-## Folder Structure
+## 🕹️ Controls
 
-```
-tug_of_war/
+| Action | Control Key | Description |
+| :--- | :---: | :--- |
+| **Player 1 Pull** | `A` | Pulls the knot marker to the **Left** |
+| **Player 2 Pull** | `L` | Pulls the knot marker to the **Right** |
+| **Restart Match** | `R` | Resets rope position, timer, and winner state |
+
+---
+
+## 📁 Repository Structure
+
+56_tug_of_war/
 ├── game/
-│   ├── game_engine.py
-│   ├── player.py
-│   └── rope.py
-├── main.py
-└── README.md
-```
+│   ├── game_engine.py   # Core game loop, rendering engine, timer, and event handling
+│   ├── player.py        # Player entity definition and keypress logic
+│   └── rope.py          # Rope state, pull steps, boundary clamping, and win validation
+├── main.py              # Main execution entry point
+└── README.md            # Repository documentation
+
+
+### Lab 4 Required Submission Hierarchy (`/Lab-4`)
+Lab-4/
+├── 56_tug_of_war/      # Updated project source files
+├── video_before.mp4    # 10-second screen recording of broken/initial code execution
+├── video_after.mp4     # 10-second screen recording of fixed, fully working game
+└── chat_history.pdf    # Exported prompt history from Vibe Coding AI sessions
+
 
 ---
 
-## Submission Checklist
+## 💻 Technical Setup & Requirements
 
-Submission is only the following three things:
+### Dependencies
+- **Python**: Version 3.8+
+- **Pygame**: Version 2.0+
 
-- [] A 10-second video of gameplay **before** your changes, showing the bug/broken behavior
-- [] A 10-second video of gameplay **after** your changes, showing the bug fixed and the new features working
-- [] The Chat/LLM used page link, with the complete chat history
+### Installation & Execution
+
+1. **Clone the Repository**:
+   ```bash
+   git clone [https://github.com/ChigilarNishanth/56_tug_of_war.git](https://github.com/ChigilarNishanth/56_tug_of_war.git)
+   cd 56_tug_of_war
+Install Required Packages:
+
+Bash
+pip install pygame
+Run the Application:
+
+Bash
+python main.py
+🎯 Match Rules
+Boundary Victory: The first player to pull the knot past their colored threshold line (Red on the left, Blue on the right) wins immediately.
+
+Time Limit: Each match runs for 30 seconds.
+
+Timeout Rule: If the timer hits 0s without either threshold being crossed, the player who pulled the knot closest to their side is declared winner. If the knot is at exact center, the match ends in a Tie.
